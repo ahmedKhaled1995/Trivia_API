@@ -93,9 +93,16 @@ def create_app(test_config=None):
     '''
     @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def delete_book(question_id):
-        question_to_delete = Question.query.filter(Question.id == question_id).first()
+        # Getting the question to delete
+        question_to_delete = None
+        try:
+            question_to_delete = Question.query.filter(Question.id == question_id).first()
+        except():
+            abort(500)
+        # The user provided an invalid id
         if not question_to_delete:
             abort(404)
+        # Deleting the question and returning the response
         delete_success = question_to_delete.delete()
         if not delete_success:
             abort(500)
