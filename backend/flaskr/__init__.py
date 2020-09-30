@@ -1,6 +1,4 @@
-import os
 from flask import Flask, request, abort, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
@@ -212,6 +210,7 @@ def create_app(test_config=None):
     '''
     @app.route('/categories/<int:category_id>/questions', methods=['GET'])
     def get_questions_by_category(category_id):
+        # Getting questions in the given category
         questions_in_category = None
         try:
             questions_in_category = Question.query.filter(Question.category == category_id).all()
@@ -219,6 +218,7 @@ def create_app(test_config=None):
             abort(500)
         if not questions_in_category:
             abort(404)
+        # Serializing and shuffling the questions then returning them
         questions_in_category_serialized = [question.format() for question in questions_in_category]
         random.shuffle(questions_in_category_serialized)
         return jsonify({
@@ -269,6 +269,7 @@ def create_app(test_config=None):
             abort(500)
         next_question_serialized = get_next_question(previous_questions_ids, questions_in_the_quiz_category)
         return jsonify({
+            'total_questions': len(questions_in_the_quiz_category),
             'question': next_question_serialized
         }), 200
     '''
@@ -311,5 +312,3 @@ def create_app(test_config=None):
         }), 500
 
     return app
-
-    # fixed a bug in evaluateAnswer method in QuizView component

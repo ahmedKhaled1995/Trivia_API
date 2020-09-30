@@ -17,6 +17,9 @@ class QuizView extends Component {
       currentQuestion: {},
       guess: "",
       forceEnd: false,
+      // added states by me
+      currenQuestion: 0,
+      totalQuestions: null,
     };
   }
 
@@ -63,12 +66,22 @@ class QuizView extends Component {
       },
       crossDomain: true,
       success: (result) => {
-        this.setState({
-          showAnswer: false,
-          previousQuestions: previousQuestions,
-          currentQuestion: result.question,
-          guess: "",
-          forceEnd: result.question ? false : true,
+        this.setState((oldState) => {
+          let totalQuestions = 5;
+          if (!oldState.totalQuestions && result.total_questions < 5) {
+            totalQuestions = result.total_questions;
+          }
+          return {
+            showAnswer: false,
+            previousQuestions: previousQuestions,
+            currentQuestion: result.question,
+            guess: "",
+            forceEnd: result.question ? false : true,
+            currenQuestion: oldState.currenQuestion + 1,
+            totalQuestions: oldState.totalQuestions
+              ? oldState.totalQuestions
+              : totalQuestions,
+          };
         });
         return;
       },
@@ -85,9 +98,11 @@ class QuizView extends Component {
       .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
       .toLowerCase();
     let evaluate = this.evaluateAnswer();
-    this.setState({
-      numCorrect: !evaluate ? this.state.numCorrect : this.state.numCorrect + 1,
-      showAnswer: true,
+    this.setState((oldState) => {
+      return {
+        numCorrect: !evaluate ? oldState.numCorrect : oldState.numCorrect + 1,
+        showAnswer: true,
+      };
     });
   };
 
@@ -100,6 +115,9 @@ class QuizView extends Component {
       currentQuestion: {},
       guess: "",
       forceEnd: false,
+      // added states by me
+      currenQuestion: 0,
+      totalQuestions: null,
     });
   };
 
@@ -150,7 +168,7 @@ class QuizView extends Component {
       .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
       .toLowerCase();
     const answerArray = [this.state.currentQuestion.answer.toLowerCase()];
-    console.log(answerArray);
+    //console.log(answerArray);
     return answerArray.includes(formatGuess);
   };
 
@@ -184,6 +202,12 @@ class QuizView extends Component {
       this.renderCorrectAnswer()
     ) : (
       <div className="quiz-play-holder">
+        <div className="question-number-box">
+          <h3>
+            {this.state.currenQuestion}/{this.state.totalQuestions}
+          </h3>
+          <h4>Correct answers: {this.state.numCorrect}</h4>
+        </div>
         <div className="quiz-question">
           {this.state.currentQuestion.question}
         </div>
