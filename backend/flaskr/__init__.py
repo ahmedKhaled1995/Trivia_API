@@ -71,9 +71,11 @@ def create_app(test_config=None):
             categories = Category.query.order_by('id').all()
         except():
             abort(500)
+        # Serializing the questions and shuffling them
         serialized_questions = get_paginated_data(request, all_questions, QUESTIONS_PER_PAGE)
         if not serialized_questions or not categories:
             abort(404)
+        random.shuffle(serialized_questions)
         categories_map = get_all_categories_map(categories)
         # Getting a random number that will represent the current category
         current_category = random.randrange(LENGTH_CATEGORIES) + 1
@@ -108,8 +110,8 @@ def create_app(test_config=None):
             abort(500)
         return jsonify({
             'success': True,
-            'deleted_book_id': question_to_delete.id,
-            'books_count': len(Question.query.order_by('id').all())
+            'deleted_question_id': question_to_delete.id,
+            'total_questions': len(Question.query.order_by('id').all())
         }), 200
 
     '''
@@ -125,10 +127,8 @@ def create_app(test_config=None):
     @app.route("/questions", methods=['POST'])
     def add_question():
         # Getting the request data as JSON
-        req_body = None
-        try:
-            req_body = request.get_json()
-        except():
+        req_body = request.get_json()
+        if req_body is None:
             abort(400)
         # Checking if the user posted an invalid data
         allowed_fields_of_question = ['question', 'answer', 'category', 'difficulty']
@@ -150,7 +150,7 @@ def create_app(test_config=None):
         return jsonify({
             'success': True,
             'question_id': question.id,
-            'questions_count': len(Question.query.order_by('id').all())
+            'total_questions': len(Question.query.order_by('id').all())
         }), 201
 
     '''
@@ -166,18 +166,23 @@ def create_app(test_config=None):
     @app.route('/questions/search', methods=['POST'])
     def search_questions():
         # Getting the request data as JSON
-        req_body = None
-        try:
-            req_body = request.get_json()
-        except():
+        req_body = request.get_json()
+        if req_body is None:
             abort(400)
-        search_term = req_body['searchTerm']
+        search_term = None
+        # Checking if the user has provided a valid body request
+        if "searchTerm" in req_body:
+            search_term = req_body['searchTerm']
+        else:
+            abort(422)
+        if not search_term:
+            abort(422)
         questions = None
         try:
             questions = Question.query.filter(Question.question.ilike(f'%{search_term}%')).all()
         except():
             abort(500)
-        # Not necessarily an error, it just means no data to retrieve
+        # Returning a response if no data is found
         if not questions:
             return jsonify(
                 {
@@ -185,7 +190,7 @@ def create_app(test_config=None):
                     'total_questions': 0,
                     'current_category': None
                 }
-            ), 200
+            ), 404
         questions_serialized = [question.format() for question in questions]
         # Getting a random number that will represent the current category
         current_category = random.randrange(LENGTH_CATEGORIES) + 1
@@ -215,6 +220,7 @@ def create_app(test_config=None):
         if not questions_in_category:
             abort(404)
         questions_in_category_serialized = [question.format() for question in questions_in_category]
+        random.shuffle(questions_in_category_serialized)
         return jsonify({
             'questions': questions_in_category_serialized,
             'total_questions': len(questions_in_category_serialized),
@@ -235,18 +241,21 @@ def create_app(test_config=None):
     @app.route('/quizzes', methods=['POST'])
     def play_game():
         # Getting the request data as JSON
-        req_body = None
-        try:
-            req_body = request.get_json()
-        except():
+        req_body = request.get_json()
+        if req_body is None:
             abort(400)
+        # Checking the validity of the request body
+        allowed_fields = ['quiz_category', 'previous_questions']
+        for field in req_body:
+            if field not in allowed_fields:
+                abort(422)
         # Parsing the request to make sure the request body is correctly formatted
         quiz_category = None
         previous_questions_ids = None
         try:
             quiz_category = int(req_body['quiz_category']['id'])
             previous_questions_ids = list(req_body['previous_questions'])
-        except():
+        except ValueError:
             abort(422)
         # Getting the next question to send, that question's id is not in the 'previous_questions_ids' list and its
         # category matches the 'quiz_category'
