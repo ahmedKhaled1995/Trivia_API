@@ -243,10 +243,6 @@ def create_app(test_config=None):
         # Parsing the request to make sure the request body is correctly formatted
         quiz_category = None
         previous_questions_ids = None
-
-        #print(req_body)
-        #return 'test', 200
-
         try:
             quiz_category = int(req_body['quiz_category']['id'])
             previous_questions_ids = list(req_body['previous_questions'])
