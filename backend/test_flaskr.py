@@ -80,7 +80,7 @@ class TriviaTestCase(unittest.TestCase):
 
     # Error Case
     def test_404_delete_question(self):
-        res = self.client().delete('/questions/15')
+        res = self.client().delete('/questions/100')
         res_data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 404)
